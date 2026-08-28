@@ -393,61 +393,33 @@ class _IndemnitesScreenState
                       physics:
                       const AlwaysScrollableScrollPhysics(),
 
-                      itemCount:
-                      indemnites.length,
+                      itemCount: indemnites.length,
 
-                      itemBuilder:
-                          (context, index) {
-                        final indemnite =
-                        indemnites[
-                        index];
+                      itemBuilder: (context, index) {
+                        final indemnite = indemnites[index];
 
-                        final preuve =
-                        indemnite[
-                        'preuve'];
+                        final preuve = indemnite['preuve'];
 
                         return _IndemniteCard(
-                          idIndemnisation:
-                          (indemnite[
-                          'id_indemnisation']
-                          as num)
-                              .toInt(),
+                          idIndemnisation: (indemnite['id_indemnisation']
+                          as num).toInt(),
 
-                          type: _nomType(
-                            indemnite[
-                            'id_type'],
+                          type: _nomType(indemnite['id_type']),
+
+                          montant: _formaterMontant(
+                            indemnite['TTC'] ??
+                                indemnite['montant_calculer'] ??
+                                indemnite['montant_saisie'],
                           ),
+                          date: _formaterDate(indemnite['date_indemnisation'],),
 
-                          montant:
-                          _formaterMontant(
-                            indemnite[
-                            'montant_calculer'] ??
-                                indemnite[
-                                'montant_saisie'],
-                          ),
+                          hasPreuve: preuve != null && preuve.toString().isNotEmpty,
 
-                          date:
-                          _formaterDate(
-                            indemnite[
-                            'date_indemnisation'],
-                          ),
-
-                          hasPreuve:
-                          preuve !=
-                              null &&
-                              preuve
-                                  .toString()
-                                  .isNotEmpty,
-
-                          onModifier: () {
-                            _modifierIndemnite(
-                              indemnite,
-                            );
+                          onModifier: () {_modifierIndemnite(indemnite,);
                           },
 
                           onPreuve:
-                          preuve == null
-                              ? null
+                          preuve == null ? null
                               : () {
                             _ouvrirPreuve(
                               preuve
@@ -858,6 +830,7 @@ class _IndemniteCard
                               'Voir la preuve',
                               style:
                               TextStyle(
+                                fontSize: 12,
                                 decoration:
                                 TextDecoration
                                     .underline,
@@ -882,13 +855,10 @@ class _IndemniteCard
 
               children: [
                 Text(
-                  montant,
-
-                  style:
-                  const TextStyle(
-                    fontSize: 17,
-                    fontWeight:
-                    FontWeight.bold,
+                  '$montant TTC',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
 

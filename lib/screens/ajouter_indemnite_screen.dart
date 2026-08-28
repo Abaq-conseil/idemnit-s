@@ -30,17 +30,34 @@ class AjouterIndemniteScreen extends StatefulWidget {
 
 class _AjouterIndemniteScreenState
     extends State<AjouterIndemniteScreen> {
-  final SupabaseService _supabaseService =
-  SupabaseService();
+  final SupabaseService _supabaseService = SupabaseService();
 
-  final _formKey =
-  GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
+
+  void _calculerTtc() {
+    final ht = double.tryParse(
+      htController.text.replaceAll(',', '.'),
+    );
+
+    final tva = double.tryParse(
+      tvaController.text.replaceAll(',', '.'),
+    );
+
+    if (ht == null || tva == null) {
+      ttcController.text = '';
+      return;
+    }
+
+    final ttc = ht + tva;
+
+    ttcController.text = ttc.toStringAsFixed(2);
+  }
 
   bool _validationLancee = false;
+
   bool _enregistrementEnCours = false;
 
-  String typeIndemnite =
-      'Indemnités kilométriques';
+  String typeIndemnite = 'Indemnités kilométriques';
 
   bool allerRetour = false;
 
@@ -52,23 +69,21 @@ class _AjouterIndemniteScreenState
 
   bool supprimerAnciennePreuve = false;
 
-  final departController =
-  TextEditingController();
+  final departController = TextEditingController();
 
-  final arriveeController =
-  TextEditingController();
+  final arriveeController = TextEditingController();
 
-  final distanceController =
-  TextEditingController();
+  final distanceController = TextEditingController();
 
-  final montantController =
-  TextEditingController();
+  final htController = TextEditingController();
 
-  final motifController =
-  TextEditingController();
+  final tvaController = TextEditingController();
 
-  final titreController =
-  TextEditingController();
+  final ttcController = TextEditingController();
+
+  final motifController = TextEditingController();
+
+  final titreController = TextEditingController();
 
   // ================================================================
   // INIT
@@ -82,8 +97,7 @@ class _AjouterIndemniteScreenState
   }
 
   void _chargerIndemniteExistante() {
-    final data =
-        widget.indemniteExistante;
+    final data = widget.indemniteExistante;
 
     if (data == null) {
       return;
@@ -97,23 +111,19 @@ class _AjouterIndemniteScreenState
 
     switch (idType) {
       case 1:
-        typeIndemnite =
-        'Restauration';
+        typeIndemnite = 'Restauration';
         break;
 
       case 2:
-        typeIndemnite =
-        'Indemnités kilométriques';
+        typeIndemnite = 'Indemnités kilométriques';
         break;
 
       case 3:
-        typeIndemnite =
-        'Autre';
+        typeIndemnite = 'Autre';
         break;
 
       case 4:
-        typeIndemnite =
-        'Péage / Parking';
+        typeIndemnite = 'Péage / Parking';
         break;
     }
 
@@ -154,15 +164,29 @@ class _AjouterIndemniteScreenState
           data['distance_km'].toString();
     }
 
-    // --------------------------------------------------------------
-    // MONTANT SAISI
-    // --------------------------------------------------------------
+// --------------------------------------------------------------
+// HT
+// --------------------------------------------------------------
 
-    if (data['montant_saisie'] != null) {
-      montantController.text =
-          data['montant_saisie'].toString();
+    if (data['HT'] != null) {
+      htController.text = data['HT'].toString();
     }
 
+// --------------------------------------------------------------
+// TVA
+// --------------------------------------------------------------
+
+    if (data['TVA'] != null) {
+      tvaController.text = data['TVA'].toString();
+    }
+
+// --------------------------------------------------------------
+// TTC
+// --------------------------------------------------------------
+
+    if (data['TTC'] != null) {
+      ttcController.text = data['TTC'].toString();
+    }
     // --------------------------------------------------------------
     // ALLER RETOUR
     // --------------------------------------------------------------
@@ -198,7 +222,9 @@ class _AjouterIndemniteScreenState
     departController.dispose();
     arriveeController.dispose();
     distanceController.dispose();
-    montantController.dispose();
+    htController.dispose();
+    tvaController.dispose();
+    ttcController.dispose();
     motifController.dispose();
     titreController.dispose();
 
@@ -464,11 +490,11 @@ class _AjouterIndemniteScreenState
 
         _champPreuve(),
 
-        const SizedBox(
-          height: 20,
-        ),
-
         _boutonEnregistrer(),
+
+        const SizedBox(
+          height: 40,
+        ),
       ],
     );
   }
@@ -483,19 +509,7 @@ class _AjouterIndemniteScreenState
       CrossAxisAlignment.start,
 
       children: [
-        _champ(
-          'Montant',
-          controller:
-          montantController,
-
-          keyboardType:
-          const TextInputType.numberWithOptions(
-            decimal: true,
-          ),
-
-          validator:
-          _validerMontant,
-        ),
+        _buildChampsMontants(),
 
         _champDate(),
 
@@ -522,19 +536,7 @@ class _AjouterIndemniteScreenState
       CrossAxisAlignment.start,
 
       children: [
-        _champ(
-          'Montant',
-          controller:
-          montantController,
-
-          keyboardType:
-          const TextInputType.numberWithOptions(
-            decimal: true,
-          ),
-
-          validator:
-          _validerMontant,
-        ),
+        _buildChampsMontants(),
 
         _champDate(),
 
@@ -576,19 +578,7 @@ class _AjouterIndemniteScreenState
           },
         ),
 
-        _champ(
-          'Montant',
-          controller:
-          montantController,
-
-          keyboardType:
-          const TextInputType.numberWithOptions(
-            decimal: true,
-          ),
-
-          validator:
-          _validerMontant,
-        ),
+        _buildChampsMontants(),
 
         _champDate(),
 
@@ -614,6 +604,8 @@ class _AjouterIndemniteScreenState
         TextEditingController? controller,
         TextInputType? keyboardType,
         String? Function(String?)? validator,
+        void Function(String)? onChanged,
+        bool readOnly = false,
       }) {
     return Padding(
       padding:
@@ -623,6 +615,9 @@ class _AjouterIndemniteScreenState
 
       child: TextFormField(
         controller: controller,
+
+        onChanged: onChanged,
+        readOnly: readOnly,
 
         keyboardType:
         keyboardType,
@@ -1261,21 +1256,28 @@ class _AjouterIndemniteScreenState
       // MONTANT SAISI
       // ------------------------------------------------------------
 
-      double? montantSaisie;
+      double? ht;
+      double? tva;
+      double? ttc;
 
-      if (montantController
-          .text
-          .trim()
-          .isNotEmpty) {
-        montantSaisie =
-            double.tryParse(
-              montantController.text
-                  .trim()
-                  .replaceAll(
-                ',',
-                '.',
-              ),
-            );
+      if (typeIndemnite == 'Indemnités kilométriques') {
+        // Pour les indemnités kilométriques,
+        // le montant est calculé par la BDD.
+        ht = null;
+        tva = 0;
+        ttc = null;
+      } else {
+        ht = double.tryParse(
+          htController.text.trim().replaceAll(',', '.'),
+        );
+
+        tva = double.tryParse(
+          tvaController.text.trim().replaceAll(',', '.'),
+        );
+
+        ttc = double.tryParse(
+          ttcController.text.trim().replaceAll(',', '.'),
+        );
       }
 
       // ------------------------------------------------------------
@@ -1398,11 +1400,11 @@ class _AjouterIndemniteScreenState
           // le trigger PostgreSQL calcule montant_calculer.
           montantCalculer: null,
 
-          montantSaisie:
-          typeIndemnite ==
-              'Indemnités kilométriques'
-              ? null
-              : montantSaisie,
+          montantSaisie: null,
+
+          ht: ht,
+          tva: tva,
+          ttc: ttc,
 
           dateIndemnisation:
           dateIndemnisation,
@@ -1493,11 +1495,11 @@ class _AjouterIndemniteScreenState
             'id_tarif_kilometrique':
             idTarifKilometrique,
 
-            'montant_saisie':
-            typeIndemnite ==
-                'Indemnités kilométriques'
-                ? null
-                : montantSaisie,
+            'montant_saisie': null,
+
+            'HT': ht,
+            'TVA': tva,
+            'TTC': ttc,
 
             'date_indemnisation':
             dateIndemnisation!
@@ -1631,5 +1633,63 @@ class _AjouterIndemniteScreenState
         });
       }
     }
+  }
+  Widget _buildChampsMontants() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _champ(
+          'Montant HT',
+          controller: htController,
+          keyboardType: const TextInputType.numberWithOptions(
+            decimal: true,
+          ),
+          validator: _validerMontant,
+          onChanged: (_) {
+            _calculerTtc();
+          },
+        ),
+
+        _champ(
+          'TVA',
+          controller: tvaController,
+          keyboardType: const TextInputType.numberWithOptions(
+            decimal: true,
+          ),
+          validator: _validerTva,
+          onChanged: (_) {
+            _calculerTtc();
+          },
+        ),
+
+        _champ(
+          'Montant TTC',
+          controller: ttcController,
+          keyboardType: const TextInputType.numberWithOptions(
+            decimal: true,
+          ),
+          readOnly: true,
+        ),
+      ],
+    );
+  }
+  String? _validerTva(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'La TVA est obligatoire';
+    }
+
+    final tva = double.tryParse(
+      value.replaceAll(',', '.'),
+    );
+
+    if (tva == null) {
+      return 'Veuillez saisir une TVA valide';
+    }
+
+    if (tva < 0) {
+      return 'La TVA ne peut pas être négative';
+    }
+
+    return null;
   }
 }
